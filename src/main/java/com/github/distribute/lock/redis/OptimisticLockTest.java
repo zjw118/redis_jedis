@@ -9,7 +9,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
 
 /**
- * redis乐观锁实例 
+ * redis?????????? 
  * @author linbingwen
  *
  */
@@ -24,12 +24,12 @@ public class OptimisticLockTest {
 		 
 		long endTime=System.currentTimeMillis();
 		long Time=endTime-starTime;
-		System.out.println("程序运行时间： "+Time+"ms");   
+		System.out.println("???ò?????±???? "+Time+"ms");   
 
 	}
 	
 	/**
-	 * 输出结果
+	 * ?????á??
 	 */
 	public static void printResult() {
 		Jedis jedis = RedisUtil.getInstance().getJedis();
@@ -37,18 +37,18 @@ public class OptimisticLockTest {
 
 		int i = 1;
 		for (String value : set) {
-			System.out.println("第" + i++ + "个抢到商品，"+value + " ");
+			System.out.println("??" + i++ + "?????????·??"+value + " ");
 		}
 
 		RedisUtil.returnResource(jedis);
 	}
 
 	/*
-	 * 初始化顾客开始抢商品
+	 * ???????????????????·
 	 */
 	public static void initClient() {
 		ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
-		int clientNum = 10000;// 模拟客户数目
+		int clientNum = 10000;// ???????§????
 		for (int i = 0; i < clientNum; i++) {
 			cachedThreadPool.execute(new ClientThread(i));
 		}
@@ -56,7 +56,7 @@ public class OptimisticLockTest {
 		
 		while(true){  
 	            if(cachedThreadPool.isTerminated()){  
-	                System.out.println("所有的线程都结束了！");  
+	                System.out.println("?ù???????????á??????");  
 	                break;  
 	            }  
 	            try {
@@ -68,12 +68,12 @@ public class OptimisticLockTest {
 	}
 
 	/**
-	 * 初始化商品个数
+	 * ?????????·????
 	 */
 	public static void initPrduct() {
-		int prdNum = 100;// 商品个数
+		int prdNum = 100;// ???·????
 		String key = "prdNum";
-		String clientList = "clientList";// 抢购到商品的顾客列表
+		String clientList = "clientList";// ?????????·????????±í
 		Jedis jedis = RedisUtil.getInstance().getJedis();
 
 		if (jedis.exists(key)) {
@@ -84,52 +84,52 @@ public class OptimisticLockTest {
 			jedis.del(clientList);
 		}
 
-		jedis.set(key, String.valueOf(prdNum));// 初始化
+		jedis.set(key, String.valueOf(prdNum));// ??????
 		RedisUtil.returnResource(jedis);
 	}
 
 }
 
 /**
- * 顾客线程
+ * ????????
  * 
  * @author linbingwen
  *
  */
 class ClientThread implements Runnable {
 	Jedis jedis = null;
-	String key = "prdNum";// 商品主键
-	String clientList = "clientList";//// 抢购到商品的顾客列表主键
+	String key = "prdNum";// ???·?÷?ü
+	String clientList = "clientList";//// ?????????·????????±í?÷?ü
 	String clientName;
 
 	public ClientThread(int num) {
-		clientName = "编号=" + num;
+		clientName = "±à??=" + num;
 	}
 
 	public void run() {
 		try {
-			Thread.sleep((int)(Math.random()*5000));// 随机睡眠一下
+			Thread.sleep((int)(Math.random()*5000));// ???ú????????
 		} catch (InterruptedException e1) {
 		}
 		while (true) {
-			System.out.println("顾客:" + clientName + "开始抢商品");
+			System.out.println("????:" + clientName + "?????????·");
 			jedis = RedisUtil.getInstance().getJedis();
 			try {
 				jedis.watch(key);
-				int prdNum = Integer.parseInt(jedis.get(key));// 当前商品个数
+				int prdNum = Integer.parseInt(jedis.get(key));// ?±?°???·????
 				if (prdNum > 0) {
 					Transaction transaction = jedis.multi();
 					transaction.set(key, String.valueOf(prdNum - 1));
 					List<Object> result = transaction.exec();
 					if (result == null || result.isEmpty()) {
-						System.out.println("悲剧了，顾客:" + clientName + "没有抢到商品");// 可能是watch-key被外部修改，或者是数据操作被驳回
+						System.out.println("±???????????:" + clientName + "???????????·");// ??????watch-key±????????????ò??????????×÷±?????
 					} else {
-						jedis.sadd(clientList, clientName);// 抢到商品记录一下
-						System.out.println("好高兴，顾客:" + clientName + "抢到商品");
+						jedis.sadd(clientList, clientName);// ???????·????????
+						System.out.println("????????????:" + clientName + "???????·");
 						break;
 					}
 				} else {
-					System.out.println("悲剧了，库存为0，顾客:" + clientName + "没有抢到商品");
+					System.out.println("±?????????????0??????:" + clientName + "???????????·");
 					break;
 				}
 			} catch (Exception e) {
